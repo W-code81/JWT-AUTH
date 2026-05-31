@@ -1,19 +1,21 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { createHmac } = require('node:crypto')
+const crypto = require('crypto')
 
 
 const signup = async (req, res) => {
     try {
-        const {email, password} = req.body;
+        const { email, password } = req.body;
 
-        if(!email || !password) {
+        if (!email || !password) {
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
-        const existingUser  =  await User.findOne({email});
+        const existingUser = await User.findOne({ email });
 
-        if (existingUser){
+        if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
@@ -21,7 +23,7 @@ const signup = async (req, res) => {
 
         const newUser = await User.create({ email, password: hashedPassword });
 
-        res.status(201).json({ message: 'User created successfully', newUser });
+        res.status(200).json({ message: 'User created successfully', newUser });
 
     } catch (error) {
         console.log('Error code : ', error.code);
@@ -32,14 +34,14 @@ const signup = async (req, res) => {
 }
 
 const login = async (req, res) => {
-    try{
-        const {email, password} = req.body;
+    try {
+        const { email, password } = req.body;
 
-        if(!email || !password) {
+        if (!email || !password) {
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
-        const user = await User.findOne({email});
+        const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid credentials' });
@@ -51,7 +53,7 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        const token =  jwt.sign({userId: user._id}, process.env.JWT_SECRET, {expiresIn: '1h'}); // Generate JWT token
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Generate JWT token
 
         res.cookie('token', token, { // Sends token as an HTTP-only cookie
             httpOnly: true,
@@ -67,7 +69,28 @@ const login = async (req, res) => {
     }
 }
 
+const getUsers = async (req, res) => {
+    try {
+        const allUsers = await User.find({})
+
+        //allUsers return array so check length
+        if (allUsers.length === 0) {
+            return res.status(404).json({ message: "no user exists" })
+        }
+
+        res.status(200).json({ message: "all users: ", allUsers })
+
+    } catch (error) {
+        console.error("Error code: ", error.code)
+        console.error("Error msg: ", error.message)
+        res.status(500).json({ message: "failed to fetch all users" })
+    }
+}
+
+
+
 module.exports = {
-  signup,
-  login,
+    signup,
+    login,
+    getUsers
 };
