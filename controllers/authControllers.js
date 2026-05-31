@@ -149,6 +149,32 @@ const forgotPassword = async (req, res) => {
     }
 }
 
+const getResetPassword = async (req, res) => {
+    try {
+        // const {id} = req.body;
+
+        //hash the token from the URL to compare with DB
+        const hashedToken = createHmac("sha256", process.env.CRYPTO_kEY).update(req.params.token).digest("hex")
+
+        //looks up the user with the hashed token and checks if it's not expired (greater than now)
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() },
+        });
+
+        if (!user) {
+           return res.status(400).json({ message: "Invalid or expired token" })
+        }
+
+        res.status(200).json({ message: "rest page render" })
+
+    } catch (error) {
+        console.error("Error code: ", error.code)
+        console.error("Error msg: ", error.message)
+        res.status(500).json({ message: "failed to process reset token" })
+    }
+}
+
 
 
 
@@ -157,5 +183,5 @@ module.exports = {
     login,
     getUsers,
     forgotPassword,
-    
+    getResetPassword
 };
