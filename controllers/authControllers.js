@@ -175,7 +175,50 @@ const getResetPassword = async (req, res) => {
     }
 }
 
+const changePassword = async (req, res) => {
+    try {
+        const { password } = req.body
 
+        if (!password) {
+           return res.status(400).json({ message: "password is required" })
+        }
+
+        if (password.length < 6) {
+           return res.status(400).json({ message: "password must be greater 6" })
+        }
+
+        //hash the token from the URL to compare with DB
+        const hashedToken = createHmac("sha256", process.env.CRYPTO_kEY).update(req.params.token).digest("hex")
+
+        //looks up the user with the hashed token and checks if it's not expired (greater than now)
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() },
+        });
+
+        if (!user) {
+           return res.status(400).json({ message: "Invalid or expired token" })
+        }
+
+        //hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        user.password = hashedPassword
+
+        // remove token (one-time use)
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        await user.save()
+
+        res.status(200).json({ message: "Password reset successful. Please login." })
+
+    } catch (error) {
+        console.error("Error code: ", error.code)
+        console.error("Error msg: ", error.message)
+        res.status(500).json({ message: "failed to reset password" })
+    }
+}
 
 
 module.exports = {
@@ -183,5 +226,6 @@ module.exports = {
     login,
     getUsers,
     forgotPassword,
-    getResetPassword
+    getResetPassword,
+    changePassword
 };
