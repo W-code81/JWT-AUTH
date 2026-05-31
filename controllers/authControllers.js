@@ -87,10 +87,75 @@ const getUsers = async (req, res) => {
     }
 }
 
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body
+
+        if (!email) {
+           return res.status(400).json({ message: "email is required" })
+        }
+
+        const user = await User.findOne({ email })
+
+        if (!user) {
+           return res.status(400).json({ message: "no user was found" })
+        }
+
+        // const rawToken =  crypto.randomBytes(32).toString('hex')
+        const rawToken = crypto.randomBytes(32).toString('base64url')
+
+        // const hashedToken = crypto 
+        // .createHash("sha256")
+        // .update(rawToken)
+        // .digest("hex");
+
+        //password hash for db
+        const hashedToken = createHmac("sha256", process.env.CRYPTO_kEY)
+            .update(rawToken)
+            .digest("hex");
+
+        //db store
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpires = Date.now() + 1000 * 60 * 15
+
+        await user.save()
+
+        const resetLink = `${process.env.LOCAL_URL}/api/auth/reset-password/${rawToken}`;
+
+        res.status(200).json({ message: "sent token", resetLink })
+
+        //mail transporter
+        //     await transporter.sendMail({
+        //     from: `APP Team <${process.env.EMAIL_USER}>`,
+        //     to: `${email}`,
+        //     subject: `Reset Password Link from APP`,
+        //     html: `
+        //     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        //     <h2>Password Reset Request</h2>
+        //     <p>Hi ${email},</p>
+        //     <p>We received a request to reset your TruckRiser password. Click the link below to set a new password:</p>
+        //     <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #ff7700; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+        //     <p>This link expires in <strong>15 minutes</strong>.</p>
+        //     <p>If you didn't request this, you can safely ignore this email.</p>
+        //     <p>— The TruckRiser Team</p>
+        //     </div>`
+        //   })
+
+    }
+    catch (error) {
+        console.error("Error code: ", error.code)
+        console.error("Error msg: ", error.message)
+        res.status(500).json({ message: "failed to send reset token" })
+    }
+}
+
+
 
 
 module.exports = {
     signup,
     login,
-    getUsers
+    getUsers,
+    forgotPassword,
+    
 };
