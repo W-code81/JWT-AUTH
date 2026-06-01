@@ -69,6 +69,16 @@ const login = async (req, res) => {
     }
 }
 
+const logOut = async (req, res) => {
+
+    res.clearCookie("token");
+
+    res.json({
+        message: "Logged out",
+    });
+
+}
+
 const getUsers = async (req, res) => {
     try {
         const allUsers = await User.find({})
@@ -92,13 +102,13 @@ const forgotPassword = async (req, res) => {
         const { email } = req.body
 
         if (!email) {
-           return res.status(400).json({ message: "email is required" })
+            return res.status(400).json({ message: "email is required" })
         }
 
         const user = await User.findOne({ email })
 
         if (!user) {
-           return res.status(400).json({ message: "no user was found" })
+            return res.status(400).json({ message: "no user was found" })
         }
 
         // const rawToken =  crypto.randomBytes(32).toString('hex')
@@ -163,7 +173,7 @@ const getResetPassword = async (req, res) => {
         });
 
         if (!user) {
-           return res.status(400).json({ message: "Invalid or expired token" })
+            return res.status(400).json({ message: "Invalid or expired token" })
         }
 
         res.status(200).json({ message: "rest page render" })
@@ -180,11 +190,11 @@ const changePassword = async (req, res) => {
         const { password } = req.body
 
         if (!password) {
-           return res.status(400).json({ message: "password is required" })
+            return res.status(400).json({ message: "password is required" })
         }
 
         if (password.length < 6) {
-           return res.status(400).json({ message: "password must be greater 6" })
+            return res.status(400).json({ message: "password must be greater 6" })
         }
 
         //hash the token from the URL to compare with DB
@@ -197,7 +207,7 @@ const changePassword = async (req, res) => {
         });
 
         if (!user) {
-           return res.status(400).json({ message: "Invalid or expired token" })
+            return res.status(400).json({ message: "Invalid or expired token" })
         }
 
         //hash password
@@ -224,6 +234,7 @@ const changePassword = async (req, res) => {
 module.exports = {
     signup,
     login,
+    logOut,
     getUsers,
     forgotPassword,
     getResetPassword,
