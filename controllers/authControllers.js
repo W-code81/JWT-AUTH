@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { createHmac } = require('node:crypto')
 const crypto = require('crypto')
+const { generateAccessToken, generateRefreshToken } = require('../utils/generateTokens');
 
 
 const signup = async (req, res) => {
@@ -63,14 +64,23 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Generate JWT token
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
 
-        res.cookie('token', token, { // Sends token as an HTTP-only cookie
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        res.cookie('token', accessToken, { // Sends token as an HTTP-only cookie
             httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24, // 1 hour
+            maxAge: 1000 * 60 * 60 * 15, // 15mins
         });
 
-        res.status(200).json({ message: 'Login successful', token });
+        res.cookie('refreshToken', refreshToken, { // Sends refresh token as an HTTP-only cookie
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+        });
+
+        res.status(200).json({ message: 'Login successful', accessToken, refreshToken });
     } catch (error) {
         console.log('Error code : ', error.code);
         console.log('Error message : ', error.message);
