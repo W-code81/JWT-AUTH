@@ -90,12 +90,24 @@ const login = async (req, res) => {
 }
 
 const logOut = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
 
-    res.clearCookie("token");
+        if (!refreshToken) {
+            return res.status(400).json({ message: "No refresh token provided" });
+        }
 
-    res.json({
-        message: "Logged out",
-    });
+        await User.findOneAndUpdate({ refreshToken }, { $unset: { refreshToken: "" } });//finds the user with the provided refresh token and removes it from the database
+        
+        res.clearCookie("token");
+        res.clearCookie("refreshToken");
+
+        res.status(200).json({ message: "Logged out"});
+    } catch (error) {
+        console.error("Error logging out user: ", error);
+        res.status(500).json({ message: "Error logging out user" });
+    }
+
 
 }
 
