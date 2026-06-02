@@ -28,8 +28,18 @@ const signup = async (req, res) => {
     } catch (error) {
         console.log('Error code : ', error.code);
         console.log('Error message : ', error.message);
-        console.error('Error signing up user : ', error);
-        res.status(500).json({ message: 'Error signing up user' });
+
+        if (error.code === 11000 //duplicate key error code for MongoDB
+            || error.message.includes("already exists")
+            || error.message.includes("duplicate key")
+            || error.message.includes("already registered")) {
+            res.status(400).json({ message: "Email already exists" });
+        }
+        else {
+            console.error('Error signing up user : ', error);
+            res.status(500).json({ message: 'Error signing up user' });
+        }
+
     }
 }
 
