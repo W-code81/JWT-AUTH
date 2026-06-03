@@ -98,11 +98,11 @@ const logOut = async (req, res) => {
         }
 
         await User.findOneAndUpdate({ refreshToken }, { $unset: { refreshToken: "" } });//finds the user with the provided refresh token and removes it from the database
-        
+
         res.clearCookie("token");
         res.clearCookie("refreshToken");
 
-        res.status(200).json({ message: "Logged out"});
+        res.status(200).json({ message: "Logged out" });
     } catch (error) {
         console.error("Error logging out user: ", error);
         res.status(500).json({ message: "Error logging out user" });
@@ -262,6 +262,40 @@ const changePassword = async (req, res) => {
     }
 }
 
+const refreshAccessToken = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({ message: "No refresh token" });
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+
+        const user = await User.findById(decoded.userId);
+
+        if (!user || user.refreshToken !== refreshToken) {
+            return res.status(403).json({ message: "Invalid refresh token" });
+        }
+
+        const newAccessToken = generateAccessToken(user);
+
+        res.cookie('token', newAccessToken, {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 15,
+        });
+
+        res.status(200).json({ accessToken: newAccessToken });
+
+    } catch (error) {
+        return res.status(403).json({ message: "Refresh failed" });
+    }
+}
+
+const getMe = async (req, res) => {
+    res.status(200).json({ user: req.user });
+}
+
 
 module.exports = {
     signup,
@@ -270,5 +304,7 @@ module.exports = {
     getUsers,
     forgotPassword,
     getResetPassword,
-    changePassword
+    changePassword,
+    refreshAccessToken,
+    getMe
 };
