@@ -35,7 +35,7 @@ const protect = async (req, res, next) => {
     }
 }
 
-const authorize = (...roles) => {
+const authorize = (...roles) => { //syntax means it accepts any number of roles (admin,editor)
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {
             return res.status(403).json({ message: "Forbidden: insufficient permissions" });
